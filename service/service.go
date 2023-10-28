@@ -30,13 +30,18 @@ func (as *ApodService) SaveApod() {
 	params.Set("api_key", apiKey)
 	params.Set("date", date.Format("2006-01-02"))
 
-	url := fmt.Sprintf("%s?%s", apiUrl, params.Encode())
+	imageUrl := fmt.Sprintf("%s?%s", apiUrl, params.Encode())
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(imageUrl)
 	if err != nil {
 		log.Println(err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(resp.Body)
 
 	var apod models.ApodModel
 	err = json.NewDecoder(resp.Body).Decode(&apod)
@@ -68,13 +73,16 @@ func (as *ApodService) GetApodByDate(w http.ResponseWriter, r *http.Request) {
 
 	apodRequest := GetApodRequest{}
 
-	json.NewDecoder(r.Body).Decode(&apodRequest)
+	err := json.NewDecoder(r.Body).Decode(&apodRequest)
+	if err != nil {
+		log.Println(err)
+	}
 
 	date := apodRequest.date
 
 	apod := as.apodRepo.GetApodByDate(date)
 
-	err := json.NewEncoder(w).Encode(&apod)
+	err = json.NewEncoder(w).Encode(&apod)
 	if err != nil {
 		log.Println(err)
 	}

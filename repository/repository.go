@@ -3,6 +3,7 @@ package repository
 import (
 	"apod/database"
 	"apod/models"
+	"database/sql"
 	"log"
 	"time"
 )
@@ -50,7 +51,7 @@ func (ar *ApodRepo) GetApodByDate(date time.Time) models.ApodModel {
 func (ar *ApodRepo) GetAllPics() []models.ApodModel {
 	db := database.GetConnection()
 
-	apods := []models.ApodModel{}
+	var apods []models.ApodModel
 
 	selectQuery := "SELECT * FROM PICS"
 
@@ -58,7 +59,12 @@ func (ar *ApodRepo) GetAllPics() []models.ApodModel {
 	if err != nil {
 		log.Println(err.Error())
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(rows)
 
 	for rows.Next() {
 		var apod models.ApodModel
