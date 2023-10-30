@@ -18,7 +18,6 @@ func main() {
 	w := worker.NewWorker(ctx)
 	w.Start()
 
-	log.Println("HERE")
 	apodService := &service.ApodService{}
 	//http.HandleFunc("/apod/save", apodService.SaveApod)
 	http.HandleFunc("/apod", apodService.GetApodByDate)

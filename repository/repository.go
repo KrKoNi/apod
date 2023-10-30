@@ -22,7 +22,7 @@ func (ar *ApodRepo) SaveApod(apodModel models.ApodModel) {
 		log.Println(err)
 	}
 
-	res, err := stmt.Exec(query, apodModel.Copyright, apodModel.Date, apodModel.Explanation, apodModel.HdUrl, apodModel.MediaType,
+	res, err := stmt.Exec(apodModel.Copyright, apodModel.Date, apodModel.Explanation, apodModel.HdUrl, apodModel.MediaType,
 		apodModel.ServiceVersion, apodModel.Title, apodModel.Url, apodModel.Content)
 
 	log.Println(res)
@@ -39,8 +39,8 @@ func (ar *ApodRepo) GetApodByDate(date time.Time) models.ApodModel {
 	apodModel := models.ApodModel{}
 	selectQuery := "SELECT * FROM PICS where DATE = $1"
 
-	err := db.QueryRow(selectQuery, date).Scan(&apodModel)
-	log.Println("Meow")
+	err := db.QueryRow(selectQuery, date).Scan(&apodModel.Copyright, &apodModel.Date, &apodModel.Explanation, &apodModel.HdUrl, &apodModel.MediaType,
+		&apodModel.ServiceVersion, &apodModel.Title, &apodModel.Url, &apodModel.Content)
 	if err != nil {
 		log.Println(err)
 	}

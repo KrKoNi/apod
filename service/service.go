@@ -53,7 +53,12 @@ func (as *ApodService) SaveApod() {
 	if err != nil {
 		log.Println(err)
 	}
-	defer imageResponse.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(imageResponse.Body)
 
 	apod.Content, err = io.ReadAll(imageResponse.Body)
 	as.apodRepo.SaveApod(apod)
@@ -61,39 +66,42 @@ func (as *ApodService) SaveApod() {
 	if err != nil {
 		log.Println(err)
 	}
-
-	fmt.Println("APOD for " + date.String() + " has been saved")
-}
-
-type GetApodRequest struct {
-	date time.Time
 }
 
 func (as *ApodService) GetApodByDate(w http.ResponseWriter, r *http.Request) {
+	params := r.URL.Query()
 
-	apodRequest := GetApodRequest{}
+	requestDate := params.Get("date")
 
-	err := json.NewDecoder(r.Body).Decode(&apodRequest)
+	date, err := time.Parse("2006-01-02", requestDate)
 	if err != nil {
 		log.Println(err)
+		http.Error(w, "Invalid date format. Please use YYYY-MM-DD.", http.StatusBadRequest)
+		return
 	}
-
-	date := apodRequest.date
 
 	apod := as.apodRepo.GetApodByDate(date)
-
-	err = json.NewEncoder(w).Encode(&apod)
 	if err != nil {
 		log.Println(err)
+		http.Error(w, "Failed to get APOD from database", http.StatusInternalServerError)
+		return
 	}
 
+	err = json.NewEncoder(w).Encode(apod)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Failed to encode APOD to JSON", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (as *ApodService) GetAllApods(w http.ResponseWriter, r *http.Request) {
 	apods := as.apodRepo.GetAllPics()
 
-	err := json.NewEncoder(w).Encode(&apods)
+	err := json.NewEncoder(w).Encode(apods)
 	if err != nil {
 		log.Println(err)
+		http.Error(w, "Failed to encode APODs to JSON", http.StatusInternalServerError)
+		return
 	}
 }
